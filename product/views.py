@@ -1,63 +1,58 @@
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import generics
+from django.db.models import Avg, Count
 from .models import Category, Product, Review
-from .serializers import CategorySerializer, ProductSerializer, ReviewSerializer
+from .serializers import (
+    CategorySerializer,
+    ProductSerializer,
+    ReviewSerializer,
+    ProductReviewsSerializer
+)
 
 
 
+class CategoryListAPIView(generics.ListAPIView):
+    serializer_class = CategorySerializer
 
-@api_view(['GET'])
-def category_list(request):
-    categories = Category.objects.all()
-    serializer = CategorySerializer(categories, many=True)
-    return Response(serializer.data)
+    def get_queryset(self):
+        return Category.objects.annotate(
+            products_count=Count('products')
+        )
 
 
-@api_view(['GET'])
-def category_detail(request, id):
-    try:
-        category = Category.objects.get(id=id)
-    except Category.DoesNotExist:
-        return Response({"error": "Category not found"}, status=status.HTTP_404_NOT_FOUND)
-
-    serializer = CategorySerializer(category)
-    return Response(serializer.data)
+class CategoryDetailAPIView(generics.RetrieveAPIView):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+    lookup_field = 'id'
 
 
 
-@api_view(['GET'])
-def product_list(request):
-    products = Product.objects.all()
-    serializer = ProductSerializer(products, many=True)
-    return Response(serializer.data)
+class ProductListAPIView(generics.ListAPIView):
+    queryset = Product.objects.all()
+    serializer_class = ProductSerializer
 
 
-@api_view(['GET'])
-def product_detail(request, id):
-    try:
-        product = Product.objects.get(id=id)
-    except Product.DoesNotExist:
-        return Response({"error": "Product not found"}, status=status.HTTP_404_NOT_FOUND)
-
-    serializer = ProductSerializer(product)
-    return Response(serializer.data)
+class ProductDetailAPIView(generics.RetrieveAPIView):
+    queryset = Product.objects.all()
+    serializer_class = ProductSerializer
+    lookup_field = 'id'
 
 
+# отзывы и средний рейтинг
+class ProductReviewsAPIView(generics.ListAPIView):
+    serializer_class = ProductReviewsSerializer
 
-@api_view(['GET'])
-def review_list(request):
-    reviews = Review.objects.all()
-    serializer = ReviewSerializer(reviews, many=True)
-    return Response(serializer.data)
+    def get_queryset(self):
+        return Product.objects.annotate(
+            rating=Avg('reviews__stars')
+        ).prefetch_related('reviews')
 
 
-@api_view(['GET'])
-def review_detail(request, id):
-    try:
-        review = Review.objects.get(id=id)
-    except Review.DoesNotExist:
-        return Response({"error": "Review not found"}, status=status.HTTP_404_NOT_FOUND)
+class ReviewListAPIView(generics.ListAPIView):
+    queryset = Review.objects.all()
+    serializer_class = ReviewSerializer
 
-    serializer = ReviewSerializer(review)
-    return Response(serializer.data)
+
+class ReviewDetailAPIView(generics.RetrieveAPIView):
+    queryset = Review.objects.all()
+    serializer_class = ReviewSerializer
+    lookup_field = 'id'

@@ -1,28 +1,27 @@
 from rest_framework import serializers
-from .models import Product, Category, Review
+from .models import Category, Product, Review
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
-        fields = ['id', 'name']
-from django.contrib import admin
-# from .models import Product, Category, Review   
+        fields = ('id', 'name')
 
-# admin.site.register(Product)    
-# admin.site.register(Category)       
-# admin.site.register(Review)
+
 class ProductSerializer(serializers.ModelSerializer):
-    category = CategorySerializer()
+    class Meta:
+        model = Product
+        fields = ('id', 'title', 'description', 'price', 'category')
+
+
+class ReviewSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Review
+        fields = ('id', 'text', 'product')
+
+class ProductReviewsSerializer(serializers.ModelSerializer):
+    reviews = ReviewSerializer(many=True, read_only=True)
+    rating = serializers.FloatField()
 
     class Meta:
         model = Product
-        fields = ['id', 'title', 'description', 'price', 'category']
-
-class ReviewSerializer(serializers.ModelSerializer):
-    product = ProductSerializer()
-
-    class Meta:
-        model = Review
-        fields = ['id', 'product', 'text'] 
-
-        
+        fields = ('id', 'title', 'description', 'price', 'category', 'rating', 'reviews')
